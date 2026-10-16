@@ -18,23 +18,42 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes("@")) return;
     setLoading(true);
-    setTimeout(() => {
+    setErrorMessage("");
+
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMessage(data.error || "Ocorreu um erro ao salvar seu e-mail.");
+      } else {
+        setFeedbackMessage(data.message || "Você receberá em primeira mão o convite de lançamento.");
+        setSubscribed(true);
+        setEmail("");
+      }
+    } catch {
+      setErrorMessage("Erro de conexão. Por favor, tente novamente.");
+    } finally {
       setLoading(false);
-      setSubscribed(true);
-      setEmail("");
-    }, 600);
+    }
   };
 
   const specialties = [
     "Casamentos & Destination",
-    "Ensaios Autorais",
-    "Família & Afeto",
-    "Editorial & Moda",
+    "15 Anos",
+    "Pré-Wedding",
   ];
 
   return (
@@ -93,7 +112,7 @@ export default function Home() {
           <span>Foco &bull; Sensibilidade &bull; Atemporalidade</span>
         </div>
 
-        {/* The Brand Logo */}
+        {/* The Brand Logo - Tamanho Reduzido */}
         <div className="relative group my-2 sm:my-3 flex items-center justify-center">
           {/* Subtle logo back-glow */}
           <div className="absolute inset-0 bg-white/5 blur-2xl rounded-full scale-110 pointer-events-none transition-transform duration-700 group-hover:scale-125" />
@@ -102,7 +121,7 @@ export default function Home() {
             src={logoSvg}
             alt="Pilotto Fotografia"
             priority
-            className="relative w-[260px] sm:w-[340px] md:w-[420px] h-auto object-contain drop-shadow-[0_10px_35px_rgba(255,255,255,0.14)] transition-all duration-700 group-hover:drop-shadow-[0_16px_50px_rgba(255,255,255,0.22)]"
+            className="relative w-[170px] sm:w-[220px] md:w-[260px] h-auto object-contain drop-shadow-[0_8px_25px_rgba(255,255,255,0.12)] transition-all duration-700 group-hover:drop-shadow-[0_12px_35px_rgba(255,255,255,0.20)]"
           />
         </div>
 
@@ -146,9 +165,7 @@ export default function Home() {
           {subscribed ? (
             <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm flex items-center justify-center gap-2.5 transition-all">
               <RiCheckLine className="size-5 text-amber-400 shrink-0" />
-              <span>
-                <strong>Pronto!</strong> Você receberá em primeira mão o convite de lançamento.
-              </span>
+              <span>{feedbackMessage}</span>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="relative flex flex-col sm:flex-row gap-2">
@@ -156,7 +173,10 @@ export default function Home() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errorMessage) setErrorMessage("");
+                  }}
                   placeholder="Seu melhor e-mail para novidades..."
                   required
                   className="w-full h-11 px-4 rounded-xl bg-zinc-900/90 border border-zinc-800 text-zinc-100 placeholder:text-zinc-500 text-sm outline-none transition-all focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 backdrop-blur-md"
@@ -178,6 +198,13 @@ export default function Home() {
               </button>
             </form>
           )}
+
+          {errorMessage && (
+            <p className="mt-2 text-xs text-rose-400 font-medium text-center">
+              {errorMessage}
+            </p>
+          )}
+
           <p className="mt-2 text-[11px] text-zinc-500 tracking-wide">
             Sem spam. Apenas o convite exclusivo para a estreia do novo portfólio.
           </p>
